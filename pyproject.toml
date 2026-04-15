@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "robot-zombie-survival"
+version = "1.0.0"
+description = "Simulation robotique mobile - Jeu de survie zombie avec architecture MVC et Pygame"
+requires-python = ">=3.9"
+dependencies = [
+    "pygame>=2.0",
+    "numpy>=1.20",
+]
+
+[project.scripts]
+robot-zombie = "robot.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
