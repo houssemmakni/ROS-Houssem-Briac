@@ -7,7 +7,7 @@ Travaille avec les indices de la grille, retourne des coordonnées en mètres.
 import heapq
 import math
 
-from robot.models.grille_occupation import GrilleOccupation
+from robot.models.navigation.grille_occupation import GrilleOccupation
 
 
 class PlanificateurAStar:

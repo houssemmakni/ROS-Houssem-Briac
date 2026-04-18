@@ -18,6 +18,7 @@ class ControleurClavierPygame(Controleur):
         self.__quitter = False
         self.__restart = False
         self.__demarrer = False
+        self.__retour_menu = False
 
     @property
     def tir_demande(self):
@@ -36,6 +37,10 @@ class ControleurClavierPygame(Controleur):
         return self.__restart
 
     @property
+    def retour_menu(self):
+        return self.__retour_menu
+
+    @property
     def demarrer(self):
         return self.__demarrer
 
@@ -45,6 +50,7 @@ class ControleurClavierPygame(Controleur):
         self.__changement_arme = -1
         self.__restart = False
         self.__demarrer = False
+        self.__retour_menu = False
 
         # Événements
         for event in pygame.event.get():
@@ -65,6 +71,8 @@ class ControleurClavierPygame(Controleur):
                     self.__changement_arme = 2
                 elif event.key == pygame.K_4:
                     self.__changement_arme = 3
+                elif event.key == pygame.K_y:
+                    self.__retour_menu = True
 
         # Tir continu avec clic gauche maintenu
         mouse_buttons = pygame.mouse.get_pressed()

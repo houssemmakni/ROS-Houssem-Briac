@@ -57,8 +57,10 @@ class VuePygame:
         y = (self.__hauteur - py - self.__offset_y) / self.__scale
         return x, y
 
-    def dessiner(self, env, wave_manager, arme_courante, armes, index_arme, grille=None):
-        """Dessine l'état complet du jeu."""
+    def dessiner(self, env, wave_manager, arme_courante, armes, index_arme,
+                 grille=None, difficulte=None, rl_agent=None,
+                 auto_play=False, rl_robot_agent=None):
+        """Dessine l'etat complet du jeu."""
         self.__screen.fill(self.COULEUR_FOND)
 
         # Vue fixe : la map est centrée dans la fenêtre
@@ -85,7 +87,9 @@ class VuePygame:
             self._dessiner_robot(env.robot, arme_courante)
 
         # Dessiner le HUD
-        self._dessiner_hud(env, wave_manager, arme_courante, armes, index_arme)
+        self._dessiner_hud(env, wave_manager, arme_courante, armes, index_arme,
+                           difficulte=difficulte, rl_agent=rl_agent,
+                           auto_play=auto_play, rl_robot_agent=rl_robot_agent)
 
         # Dessiner la minimap (cartographie)
         if grille:
@@ -122,8 +126,8 @@ class VuePygame:
 
     def _dessiner_obstacle(self, obs):
         """Dessine un obstacle (rectangle ou cercle)."""
-        from robot.models.obstacle_rectangle import ObstacleRectangle
-        from robot.models.obstacle_circulaire import ObstacleCirculaire
+        from robot.models.obstacles.obstacle_rectangle import ObstacleRectangle
+        from robot.models.obstacles.obstacle_circulaire import ObstacleCirculaire
 
         if isinstance(obs, ObstacleRectangle):
             x0, y0 = self.convertir_coordonnees(obs.x, obs.y + obs.hauteur)
@@ -214,8 +218,10 @@ class VuePygame:
         else:
             pygame.draw.circle(self.__screen, proj.couleur, (px, py), taille)
 
-    def _dessiner_hud(self, env, wave_manager, arme, armes, index_arme):
-        """Dessine l'interface utilisateur (vies, arme, vague, score)."""
+    def _dessiner_hud(self, env, wave_manager, arme, armes, index_arme,
+                      difficulte=None, rl_agent=None,
+                      auto_play=False, rl_robot_agent=None):
+        """Dessine l'interface utilisateur (PV, arme, vague, score, difficulte)."""
         robot = env.robot
         if not robot:
             return
@@ -277,7 +283,43 @@ class VuePygame:
             couleur_barre = (100, 255, 100) if ratio > 0.3 else (255, 100, 100)
             pygame.draw.rect(self.__screen, couleur_barre, (bar_x, bar_y, int(bar_w * ratio), bar_h))
 
-        # Sélecteur d'armes en bas
+        # Indicateur de difficulte (en haut a droite)
+        if difficulte:
+            from robot.models.difficulte import Difficulte
+            cfg = Difficulte.get_config(difficulte)
+            couleurs_diff = {
+                Difficulte.FACILE: (100, 200, 100),
+                Difficulte.DIFFICILE: (255, 180, 50),
+                Difficulte.IMPOSSIBLE: (255, 50, 50),
+            }
+            c = couleurs_diff.get(difficulte, (200, 200, 200))
+            diff_txt = self.__font.render(cfg["nom"], True, c)
+            self.__screen.blit(diff_txt, (self.__largeur - diff_txt.get_width() - 15, 5))
+
+            # Stats RL (mode Impossible)
+            if rl_agent and difficulte == Difficulte.IMPOSSIBLE:
+                rl_txt = self.__font_small.render(
+                    f"RL: {rl_agent.total_updates} updates | "
+                    f"explore: {rl_agent.epsilon:.0%}",
+                    True, (255, 150, 150))
+                self.__screen.blit(rl_txt, (self.__largeur - rl_txt.get_width() - 15, 30))
+
+        # Indicateur auto-play
+        if auto_play:
+            ap_txt = self.__font.render("AUTO-PLAY (RL)", True, (0, 255, 200))
+            ap_x = self.__largeur // 2 - ap_txt.get_width() // 2
+            pygame.draw.rect(self.__screen, (0, 80, 60), (ap_x - 8, 3, ap_txt.get_width() + 16, 24), border_radius=4)
+            self.__screen.blit(ap_txt, (ap_x, 5))
+
+            if rl_robot_agent:
+                rl_r_txt = self.__font_small.render(
+                    f"Robot RL: {rl_robot_agent.total_updates} updates | "
+                    f"explore: {rl_robot_agent.epsilon:.0%} | "
+                    f"kills: {rl_robot_agent.kills}",
+                    True, (0, 220, 180))
+                self.__screen.blit(rl_r_txt, (self.__largeur // 2 - rl_r_txt.get_width() // 2, 32))
+
+        # Selecteur d'armes en bas
         self._dessiner_selecteur_armes(armes, index_arme)
 
     def _dessiner_selecteur_armes(self, armes, index_arme):
@@ -310,7 +352,7 @@ class VuePygame:
 
     def _dessiner_minimap(self, grille, env):
         """Dessine la minimap (grille d'occupation) en bas à droite."""
-        from robot.models.grille_occupation import GrilleOccupation
+        from robot.models.navigation.grille_occupation import GrilleOccupation
 
         # Taille et position de la minimap
         map_w = 160
@@ -362,31 +404,42 @@ class VuePygame:
         txt = self.__font_small.render("Carte", True, (150, 150, 150))
         self.__screen.blit(txt, (map_x, map_y - 16))
 
-    def dessiner_game_over(self, wave_manager):
-        """Affiche l'écran de Game Over."""
+    def dessiner_game_over(self, wave_manager, difficulte=None, rl_agent=None,
+                           auto_play=False, rl_robot_agent=None):
+        """Affiche l'ecran de Game Over."""
         overlay = pygame.Surface((self.__largeur, self.__hauteur), pygame.SRCALPHA)
         overlay.fill((0, 0, 0, 180))
         self.__screen.blit(overlay, (0, 0))
 
         titre = self.__font_titre.render("GAME OVER", True, (220, 50, 50))
-        self.__screen.blit(titre, (self.__largeur // 2 - titre.get_width() // 2, 200))
+        self.__screen.blit(titre, (self.__largeur // 2 - titre.get_width() // 2, 180))
 
         score = self.__font_big.render(f"Score: {wave_manager.score}", True, (255, 215, 0))
-        self.__screen.blit(score, (self.__largeur // 2 - score.get_width() // 2, 280))
+        self.__screen.blit(score, (self.__largeur // 2 - score.get_width() // 2, 260))
 
         vague = self.__font.render(f"Vague atteinte: {wave_manager.vague_actuelle}", True, self.COULEUR_TEXTE)
-        self.__screen.blit(vague, (self.__largeur // 2 - vague.get_width() // 2, 340))
+        self.__screen.blit(vague, (self.__largeur // 2 - vague.get_width() // 2, 320))
 
-        restart = self.__font.render("Appuyez sur [R] pour recommencer", True, (180, 180, 180))
-        self.__screen.blit(restart, (self.__largeur // 2 - restart.get_width() // 2, 420))
+        if difficulte:
+            from robot.models.difficulte import Difficulte
+            cfg = Difficulte.get_config(difficulte)
+            diff_txt = self.__font.render(f"Difficulte: {cfg['nom']}", True, (180, 180, 180))
+            self.__screen.blit(diff_txt, (self.__largeur // 2 - diff_txt.get_width() // 2, 360))
 
-        quit_txt = self.__font.render("Appuyez sur [ECHAP] pour quitter", True, (150, 150, 150))
-        self.__screen.blit(quit_txt, (self.__largeur // 2 - quit_txt.get_width() // 2, 460))
+        if rl_agent and difficulte == "impossible":
+            rl_txt = self.__font_small.render(
+                f"RL: {rl_agent.total_updates} mises a jour | "
+                f"Les zombies continueront d'apprendre a la prochaine partie!",
+                True, (255, 150, 150))
+            self.__screen.blit(rl_txt, (self.__largeur // 2 - rl_txt.get_width() // 2, 395))
+
+        restart = self.__font.render("[R] Choisir difficulte  |  [ECHAP] Quitter", True, (180, 180, 180))
+        self.__screen.blit(restart, (self.__largeur // 2 - restart.get_width() // 2, 440))
 
         pygame.display.flip()
 
     def dessiner_ecran_titre(self):
-        """Affiche l'écran titre."""
+        """Affiche l'ecran titre."""
         self.__screen.fill(self.COULEUR_FOND)
 
         titre = self.__font_titre.render("ROBOT ZOMBIE SURVIVAL", True, (0, 200, 100))
@@ -399,15 +452,105 @@ class VuePygame:
             "1-2-3-4 : Changer d'arme",
             "",
             "Survivez aux vagues de zombies!",
-            "3 vies - Munitions auto-regen",
+            "100 PV - Munitions auto-regen",
             "",
-            "Appuyez sur [ESPACE] pour commencer",
+            "Appuyez sur [ESPACE] pour continuer",
         ]
 
         for i, line in enumerate(instructions):
             couleur = (255, 215, 0) if "ESPACE" in line else self.COULEUR_TEXTE
             txt = self.__font.render(line, True, couleur)
             self.__screen.blit(txt, (self.__largeur // 2 - txt.get_width() // 2, 280 + i * 30))
+
+        pygame.display.flip()
+
+    def dessiner_ecran_difficulte(self, selection, rl_agent=None,
+                                  auto_play=False, rl_robot_agent=None):
+        """Affiche l'ecran de selection de difficulte."""
+        self.__screen.fill(self.COULEUR_FOND)
+
+        titre = self.__font_titre.render("DIFFICULTE", True, self.COULEUR_TEXTE)
+        self.__screen.blit(titre, (self.__largeur // 2 - titre.get_width() // 2, 80))
+
+        niveaux = [
+            {
+                "nom": "FACILE",
+                "desc": ["Zombies lents, peu de PV", "150 PV robot", "Vagues toutes les 20s", "Pas de zombies armes"],
+                "couleur": (100, 220, 100),
+                "touche": "[1]",
+            },
+            {
+                "nom": "DIFFICILE",
+                "desc": ["Zombies rapides et resistants", "80 PV robot", "Vagues toutes les 12s", "Armes des la vague 3"],
+                "couleur": (255, 180, 50),
+                "touche": "[2]",
+            },
+            {
+                "nom": "IMPOSSIBLE (RL)",
+                "desc": ["Zombies avec Intelligence Artificielle", "60 PV robot", "Vagues toutes les 10s",
+                         "Q-Learning : ils apprennent en jouant!"],
+                "couleur": (255, 50, 50),
+                "touche": "[3]",
+            },
+        ]
+
+        card_w, card_h = 260, 200
+        total_w = len(niveaux) * (card_w + 20) - 20
+        start_x = (self.__largeur - total_w) // 2
+        start_y = 180
+
+        for i, niv in enumerate(niveaux):
+            x = start_x + i * (card_w + 20)
+            y = start_y
+            selected = (i == selection)
+
+            # Carte
+            fond = (50, 60, 70) if selected else (35, 40, 45)
+            pygame.draw.rect(self.__screen, fond, (x, y, card_w, card_h), border_radius=8)
+            if selected:
+                pygame.draw.rect(self.__screen, niv["couleur"], (x, y, card_w, card_h), 3, border_radius=8)
+
+            # Touche
+            key = self.__font_small.render(niv["touche"], True, (150, 150, 150))
+            self.__screen.blit(key, (x + 10, y + 10))
+
+            # Nom
+            nom = self.__font_big.render(niv["nom"], True, niv["couleur"])
+            scale_factor = min(1.0, (card_w - 20) / max(nom.get_width(), 1))
+            if scale_factor < 1.0:
+                nom = self.__font.render(niv["nom"], True, niv["couleur"])
+            self.__screen.blit(nom, (x + card_w // 2 - nom.get_width() // 2, y + 35))
+
+            # Description
+            for j, line in enumerate(niv["desc"]):
+                txt = self.__font_small.render(line, True, (180, 180, 180))
+                self.__screen.blit(txt, (x + card_w // 2 - txt.get_width() // 2, y + 85 + j * 22))
+
+        # RL info
+        if rl_agent:
+            rl_info = self.__font_small.render(
+                f"Agent RL existant : {rl_agent.total_updates} mises a jour, "
+                f"exploration: {rl_agent.epsilon:.0%}",
+                True, (255, 150, 150))
+            self.__screen.blit(rl_info, (self.__largeur // 2 - rl_info.get_width() // 2, 420))
+
+        # Toggle auto-play
+        ap_color = (0, 255, 200) if auto_play else (120, 120, 120)
+        ap_status = "ON" if auto_play else "OFF"
+        ap_txt = self.__font.render(f"[TAB] Auto-play (Robot RL) : {ap_status}", True, ap_color)
+        self.__screen.blit(ap_txt, (self.__largeur // 2 - ap_txt.get_width() // 2, 450))
+
+        if auto_play and rl_robot_agent:
+            rl_r = self.__font_small.render(
+                f"Agent Robot RL : {rl_robot_agent.total_updates} updates, "
+                f"kills: {rl_robot_agent.kills}",
+                True, (0, 200, 170))
+            self.__screen.blit(rl_r, (self.__largeur // 2 - rl_r.get_width() // 2, 478))
+
+        # Instructions
+        instr = self.__font.render("[1] [2] [3] pour choisir, [ESPACE] pour lancer",
+                                   True, (255, 215, 0))
+        self.__screen.blit(instr, (self.__largeur // 2 - instr.get_width() // 2, 510))
 
         pygame.display.flip()
 

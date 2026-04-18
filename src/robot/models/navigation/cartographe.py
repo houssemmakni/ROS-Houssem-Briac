@@ -3,7 +3,7 @@ Classe Cartographe - Algorithme de cartographie par lancer de rayon (Bresenham).
 Utilise la composition : le Cartographe possède une GrilleOccupation.
 """
 
-from robot.models.grille_occupation import GrilleOccupation
+from robot.models.navigation.grille_occupation import GrilleOccupation
 
 
 class Cartographe:

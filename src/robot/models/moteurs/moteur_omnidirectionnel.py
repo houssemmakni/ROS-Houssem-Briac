@@ -5,7 +5,7 @@ Classe MoteurOmnidirectionnel - Moteur commandé par vx, vy et omega.
 import math
 import logging
 
-from robot.models.moteur import Moteur
+from robot.models.moteurs.moteur import Moteur
 
 logger = logging.getLogger(__name__)
 

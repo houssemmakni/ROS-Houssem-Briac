@@ -5,7 +5,7 @@ Classe MoteurDifferentielRealiste - Moteur avec inertie, frottements, saturation
 import math
 import random
 
-from robot.models.moteur import Moteur
+from robot.models.moteurs.moteur import Moteur
 
 
 class MoteurDifferentielRealiste(Moteur):

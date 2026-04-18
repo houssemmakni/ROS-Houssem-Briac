@@ -5,7 +5,7 @@ Classe MoteurDifferentiel - Moteur commandé par v (linéaire) et omega (angulai
 import math
 import logging
 
-from robot.models.moteur import Moteur
+from robot.models.moteurs.moteur import Moteur
 
 logger = logging.getLogger(__name__)
 

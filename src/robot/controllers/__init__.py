@@ -12,3 +12,5 @@ from robot.controllers.avoid_strategy import AvoidStrategy
 from robot.controllers.free_direction_strategy import FreeDirectionStrategy
 from robot.controllers.goal_strategy import GoalStrategy
 from robot.controllers.navigator import Navigator
+from robot.controllers.rl_strategy import RLStrategy
+from robot.controllers.controleur_auto_rl import ControleurAutoRL

@@ -4,8 +4,8 @@ Classe FusilAPompe - Tirs multiples en éventail, cadence lente, courte portée.
 
 import time
 
-from robot.models.arme import Arme
-from robot.models.projectile import Projectile
+from robot.models.armes.arme import Arme
+from robot.models.armes.projectile import Projectile
 
 
 class FusilAPompe(Arme):

@@ -4,8 +4,8 @@ Classe Fusil - Tir unique, cadence moyenne, bonne portée.
 
 import time
 
-from robot.models.arme import Arme
-from robot.models.projectile import Projectile
+from robot.models.armes.arme import Arme
+from robot.models.armes.projectile import Projectile
 
 
 class Fusil(Arme):

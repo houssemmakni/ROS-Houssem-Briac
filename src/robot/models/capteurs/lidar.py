@@ -4,7 +4,7 @@ Envoie des rayons autour du robot pour mesurer les distances aux obstacles.
 """
 
 import math
-from robot.models.capteur import Capteur
+from robot.models.capteurs.capteur import Capteur
 
 
 class Lidar(Capteur):

@@ -2,7 +2,7 @@
 Classe ObstacleRectangle - Obstacle rectangulaire.
 """
 
-from robot.models.obstacle import Obstacle
+from robot.models.obstacles.obstacle import Obstacle
 
 
 class ObstacleRectangle(Obstacle):

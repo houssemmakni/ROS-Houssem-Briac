@@ -139,7 +139,7 @@ class RobotMobile:
 
     @staticmethod
     def moteur_valide(moteur):
-        from robot.models.moteur import Moteur
+        from robot.models.moteurs.moteur import Moteur
         return isinstance(moteur, Moteur)
 
     def __str__(self):
